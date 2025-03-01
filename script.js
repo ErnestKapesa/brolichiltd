@@ -75,9 +75,15 @@ contactForm.addEventListener('submit', async function(e) {
     submitBtn.style.opacity = '0.7';
     
     try {
-        // Replace with your form handling service (e.g., Formspree)
+        // Create FormData object
         const formData = new FormData(this);
-        const response = await fetch(this.action, {
+        
+        // Add recipient email
+        formData.append('_replyto', 'admin@brolichi.com');
+        formData.append('_subject', `New Contact Form Submission - ${formData.get('service')}`);
+        
+        // Send to Formspree
+        const response = await fetch('https://formspree.io/f/your-form-id', {
             method: 'POST',
             body: formData,
             headers: {
@@ -104,6 +110,9 @@ contactForm.addEventListener('submit', async function(e) {
                 for (let element of formElements) {
                     element.disabled = false;
                 }
+                
+                // Clear file list
+                document.querySelector('.file-list').innerHTML = '';
             }, 3000);
         } else {
             throw new Error('Form submission failed');
@@ -227,4 +236,94 @@ featureCards.forEach(card => {
     card.style.opacity = 0;
     card.style.transform = 'translateY(50px)';
     featureObserver.observe(card);
-}); 
+});
+
+// Add file validation function
+function validateFiles(input) {
+    const maxSize = input.dataset.maxSize;
+    const fileList = input.files;
+    const fileListContainer = input.parentElement.querySelector('.file-list');
+    fileListContainer.innerHTML = '';
+    
+    Array.from(fileList).forEach(file => {
+        if (file.size > maxSize) {
+            alert(`File ${file.name} is too large. Maximum size is 5MB.`);
+            input.value = '';
+            return;
+        }
+        
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['jpg', 'jpeg', 'png', 'pdf'].includes(ext)) {
+            alert(`File ${file.name} is not supported. Please upload JPG, PNG, or PDF files only.`);
+            input.value = '';
+            return;
+        }
+        
+        // Add file to list
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <span>${file.name}</span>
+            <i class="fas fa-times" onclick="removeFile(this)"></i>
+        `;
+        fileListContainer.appendChild(fileItem);
+    });
+}
+
+function removeFile(element) {
+    const fileInput = element.closest('.file-upload').querySelector('input[type="file"]');
+    fileInput.value = '';
+    element.closest('.file-item').remove();
+}
+
+// Navbar scroll effect
+const navbar = document.querySelector('.navbar');
+let lastScroll = 0;
+
+window.addEventListener('scroll', () => {
+    const currentScroll = window.pageYOffset;
+    
+    if (currentScroll > 100) {
+        navbar.classList.add('scrolled');
+    } else {
+        navbar.classList.remove('scrolled');
+    }
+    
+    lastScroll = currentScroll;
+});
+
+// Mobile menu functionality
+const navLinks = document.querySelector('.nav-links');
+const menuIcon = document.querySelector('.fa-bars');
+const closeIcon = document.querySelector('.fa-times');
+
+function showMenu() {
+    navLinks.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideMenu() {
+    navLinks.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (navLinks.classList.contains('active') && 
+        !navLinks.contains(e.target) && 
+        !menuIcon.contains(e.target)) {
+        hideMenu();
+    }
+});
+
+// Close menu when clicking on a link
+document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', hideMenu);
+});
+
+// Prevent scroll when mobile menu is open
+navLinks.addEventListener('touchmove', (e) => {
+    if (navLinks.classList.contains('active')) {
+        e.preventDefault();
+    }
+}, { passive: false }); 
